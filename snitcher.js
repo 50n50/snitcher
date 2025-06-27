@@ -1,38 +1,54 @@
-const { Client, Presence } = require("discord.js-selfbot-v13");
+const { Client } = require("discord.js-selfbot-v13");
 const dotenv = require('dotenv');
 const express = require("express");
 const app = express();
 
+dotenv.config();
+
 app.listen(3000, () => {
   console.log("Project is running");
 });
-dotenv.config();
 
 const client = new Client();
 
-const serverId = '422598538443096064'; 
-const targetChannelId = '869628912890691614';
-const destinationChannelId = '1160256480402997439';
+const serverId = '686526398285742087'; 
+
+const channelMap = {
+  '687061265897619515': '1388277540518367434',
+  '688825257376612471': '1388277503952556032',
+};
 
 client.on('ready', () => {
   console.log(`🤖 Bot is online! Logged in as ${client.user.tag}`);
-
   client.user.setPresence({ status: 'invisible' });
 });
 
 client.on('messageCreate', async (message) => {
-  if (message.guild && message.guild.id === serverId && message.channel.id === targetChannelId) {
-    const content = message.content;
-    const replyMessage = message.reference ? await message.channel.messages.fetch(message.reference.messageId) : null;
-    const replyContent = replyMessage ? `\n\n🔗 **In reply to ${replyMessage.author.username}:**\n${replyMessage.content}\n======` : '';
+  if (!message.guild || message.guild.id !== serverId) return;
 
-    let messageContent = `🔔 **New Captured Message:**\n📬 **New Captured Message from ${message.author.username}**\n📨 **Message Content:**\n${content}${replyContent}`;
+  const destChannelId = channelMap[message.channel.id];
+  if (!destChannelId) return;
 
-    const messageLink = `🔗 **Message Link:** ${message.url}`;
-    messageContent += `\n${messageLink}\n=======`;
+  try {
+    const content = message.content.trim();
+    if (!content) return;
 
-    const destinationChannel = await client.channels.fetch(destinationChannelId);
-    destinationChannel.send(messageContent);
+    const replyMessage = message.reference
+      ? await message.channel.messages.fetch(message.reference.messageId).catch(() => null)
+      : null;
+
+    let formatted = `${message.author.username} said:\n${content}`;
+
+    if (replyMessage) {
+      formatted += `\n\n↪ In reply to ${replyMessage.author.username}:\n${replyMessage.content}`;
+    }
+
+    formatted += `\n—`; 
+
+    const destinationChannel = await client.channels.fetch(destChannelId);
+    destinationChannel.send(formatted);
+  } catch (err) {
+    console.error("Failed to forward message:", err);
   }
 });
 

@@ -19,7 +19,7 @@ const channelMap = {
 };
 
 client.on('ready', () => {
-  console.log(`🤖 Bot is online! Logged in as ${client.user.tag}`);
+  console.log(`Bot is online! Logged in as ${client.user.tag}`);
   client.user.setPresence({ status: 'invisible' });
 });
 
@@ -33,9 +33,15 @@ client.on('messageCreate', async (message) => {
     const content = message.content.trim();
     if (!content) return;
 
-    const replyMessage = message.reference
-      ? await message.channel.messages.fetch(message.reference.messageId).catch(() => null)
-      : null;
+    let replyMessage = null;
+    if (message.reference) {
+      try {
+        replyMessage = await message.channel.messages.fetch(message.reference.messageId);
+      } catch (fetchError) {
+        // If we can't fetch the reply message, just continue without it
+        console.log("Could not fetch reply message:", fetchError.message);
+      }
+    }
 
     let formatted = `${message.author.username} said:\n${content}`;
 
@@ -52,4 +58,5 @@ client.on('messageCreate', async (message) => {
   }
 });
 
-client.login("token");
+client.login(process.env.TOKEN)
+  .then(() => console.log("Logged in successfully!"));
